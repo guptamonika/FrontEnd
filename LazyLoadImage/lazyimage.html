@@ -44,82 +44,57 @@ Implement the functionality in javascript that will ensure that images will be d
 		<img data-src='https://dncache-mauganscorp.netdna-ssl.com/thumbseg/901/901640-bigthumbnail.jpg'></img>
 	</div>
 	<script>
-		// Task 1: show image non progressively
-		// option 1 use backgrnd - chrome will still show progressively
-		/*var imgNodes = document.getElementsByClassName('lazy-img');
-		Array.prototype.forEach.call(imgNodes, function(imgNode) {
-			imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
-		});*/
-		
-		// option 2 can use img.src = and use onload , i think it will be the sae result
-		/*var imgNodes = document.getElementsByTagName('img');
-		Array.prototype.forEach.call(imgNodes, function(imgNode) {
-			imgNode.onload = function(img) {
-				console.log('loaded image', img);
-				imgNode.style.opacity=1;
-			}
-			imgNode.src = imgNode.getAttribute('data-src');
-		});*/
-		
-		// option 3 if you want bkgrnd image
-		/*var imgNodes = document.getElementsByClassName('lazy-img');
-		Array.prototype.forEach.call(imgNodes, function(imgNode) {
-			var bgImg = new Image();
-			bgImg.onload = function(img) {
-				console.log('loaded image', imgNode);
-				imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
-			}
-			bgImg.src = imgNode.getAttribute('data-src');
-		});*/
-		
-		
-		// check why no closure issue
-			/*for(var i=0;i<3;i++) {
-				var imgNode = imgNodes[i];
-				var bgImg = new Image();
-				var getFunc = function(imgNode) {
-					return function x(img) {
-						console.log('loaded image', imgNode);
-						imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
-						}
-				};
-			
-				bgImg.onload = getFunc(imgNode);
-				bgImg.src = imgNode.getAttribute('data-src');
-			}*/
-		//TASK 2: throttle to N images being downloaded at most
 		var imgNodes = document.getElementsByClassName('lazy-img');
-		
-		function ImageManager(imgNodes, parallelCount) {
-			this.runningCount = 0;
-			this.imgNodes = imgNodes;
-			// load the 1st parallelCount images
-			for (var i=0; i < parallelCount; i++) {
-				this.loadNext();
+				
+		var load = function(imgNode) {
+			if(imgNode.classList.contains('loaded')) {
+				return;
 			}
-		}
-		
-		ImageManager.prototype.loadNext = function() {
-			var self = this;
-			if (self.runningCount >= self.imgNodes.length) {
-				return; // dont do anything as we are done with loading the images
-			}
-			var imgNode = imgNodes[self.runningCount];
 			var bgImg = new Image();
 			var getFunc = function(imgNode) {
 				return function onImageLoaded(img) {
-					console.log('loaded image', imgNode, self.runningCount);
+					console.log('loaded image', imgNode);
 					imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
-					self.loadNext();
+					imgNode.classList.add('loaded');
 				}
 			};
 			bgImg.onload = getFunc(imgNode);
 			bgImg.src = imgNode.getAttribute('data-src');
-			self.runningCount ++;
+		}
+				
+		var last_known_scroll_position = 0;
+		var ticking = false;
+
+		function onWindowScroll(scroll_pos) {
+		  // do something with the scroll position
+			console.log(scroll_pos);
+			loadVisibleNodes();
+			// find elements that are in view and load them
+
 		}
 		
-		var imgManager = new ImageManager(imgNodes,2);
-		
+		function loadVisibleNodes() {
+			var visibleNodes = Array.prototype.filter.call(imgNodes, function(node){
+				var rect = node.getBoundingClientRect();
+				return rect.top >=0 &&  rect.bottom < window.innerHeight;
+			});
+			visibleNodes.forEach(function(node){
+				load(node);
+			});
+		}
+
+		window.addEventListener('scroll', function(e) {
+		  last_known_scroll_position = window.scrollY;
+		  if (!ticking) {
+		    window.setTimeout(function() {
+		      onWindowScroll(last_known_scroll_position);
+		      ticking = false;
+		    }, 100);
+		  }
+		  ticking = true;
+		});
+		// once shot alse needs to be done
+		loadVisibleNodes();
 	</script>
 </body>
 </html>
