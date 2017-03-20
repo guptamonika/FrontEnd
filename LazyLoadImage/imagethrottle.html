@@ -1,0 +1,125 @@
+<html>
+<head>
+	<style type='text/css'>
+		.container {
+			background-color:cyan;
+			width:50%;
+			margin: auto;
+			float:left;
+		}
+		.container2 {
+			display:none;
+		}
+		.lazy-img, img{
+			height: 200px;
+			width:100px;
+			background-color:#f5f5f5;
+			margin: 0px auto 10px;
+		 	background-size: cover;
+		}
+	</style>
+</head>
+<body>
+	<div>
+		Problem: Assuming a web page has a list of images:
+
+Implement the functionality in javascript that will ensure that images will be downloaded in the background before they are actually displayed to the user (so they show up immediately and not "slowly" as they download). An additional requirement is that no more than N images will be downloaded at the same time.
+
+	</div>
+	<div class='container'>
+		<div class='lazy-img' data-src='http://pic1.win4000.com/wallpaper/e/5537506a994b7.jpg'></div>
+		<div class='lazy-img' data-src='https://img.clipartfest.com/11c532ddce7dcf0a4c67bdeca3d982c2_free-vector-hibiscus-flowers-google-images-flowers-free_600-600.png'></div>
+		<div class='lazy-img' data-src='http://cdn.wallpapersafari.com/24/58/SoHD7R.jpg'></div>
+		<div class='lazy-img' data-src='http://itsallfreeonline.com/wp-content/uploads/2013/01/1800flowers.jpg'></div>
+		<div class='lazy-img' data-src='http://cdn.wallpapersafari.com/46/89/hKBylS.jpg'></div>
+		<div class='lazy-img' class='lazy-img' data-src='http://1.bp.blogspot.com/-o7O9GjcV9t4/T8zIuTBlw-I/AAAAAAAAEkw/gIbk-2_H-is/s1600/Flower-wallpaper-48.jpg'></div>
+		<div class='lazy-img' data-src='https://dncache-mauganscorp.netdna-ssl.com/thumbseg/901/901640-bigthumbnail.jpg'></div>
+	</div>
+	<div class='container2'>
+		<img data-src='https://img.clipartfest.com/11c532ddce7dcf0a4c67bdeca3d982c2_free-vector-hibiscus-flowers-google-images-flowers-free_600-600.png'></img>
+		<img data-src='http://cdn.wallpapersafari.com/24/58/SoHD7R.jpg'></img>
+		<img data-src='http://itsallfreeonline.com/wp-content/uploads/2013/01/1800flowers.jpg'></img>
+		<img data-src='http://cdn.wallpapersafari.com/46/89/hKBylS.jpg'></img>
+		<img data-src='http://1.bp.blogspot.com/-o7O9GjcV9t4/T8zIuTBlw-I/AAAAAAAAEkw/gIbk-2_H-is/s1600/Flower-wallpaper-48.jpg'></img>
+		<img data-src='https://dncache-mauganscorp.netdna-ssl.com/thumbseg/901/901640-bigthumbnail.jpg'></img>
+	</div>
+	<script>
+		// Task 1: show image non progressively
+		// option 1 use backgrnd - chrome will still show progressively
+		/*var imgNodes = document.getElementsByClassName('lazy-img');
+		Array.prototype.forEach.call(imgNodes, function(imgNode) {
+			imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
+		});*/
+		
+		// option 2 can use img.src = and use onload , i think it will be the sae result
+		/*var imgNodes = document.getElementsByTagName('img');
+		Array.prototype.forEach.call(imgNodes, function(imgNode) {
+			imgNode.onload = function(img) {
+				console.log('loaded image', img);
+				imgNode.style.opacity=1;
+			}
+			imgNode.src = imgNode.getAttribute('data-src');
+		});*/
+		
+		// option 3 if you want bkgrnd image
+		/*var imgNodes = document.getElementsByClassName('lazy-img');
+		Array.prototype.forEach.call(imgNodes, function(imgNode) {
+			var bgImg = new Image();
+			bgImg.onload = function(img) {
+				console.log('loaded image', imgNode);
+				imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
+			}
+			bgImg.src = imgNode.getAttribute('data-src');
+		});*/
+		
+		
+		// check why no closure issue
+			/*for(var i=0;i<3;i++) {
+				var imgNode = imgNodes[i];
+				var bgImg = new Image();
+				var getFunc = function(imgNode) {
+					return function x(img) {
+						console.log('loaded image', imgNode);
+						imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
+						}
+				};
+			
+				bgImg.onload = getFunc(imgNode);
+				bgImg.src = imgNode.getAttribute('data-src');
+			}*/
+		//TASK 2: throttle to N images being downloaded at most
+		var imgNodes = document.getElementsByClassName('lazy-img');
+		
+		function ImageManager(imgNodes, parallelCount) {
+			this.runningCount = 0;
+			this.imgNodes = imgNodes;
+			// load the 1st parallelCount images
+			for (var i=0; i < parallelCount; i++) {
+				this.loadNext();
+			}
+		}
+		
+		ImageManager.prototype.loadNext = function() {
+			var self = this;
+			if (self.runningCount >= self.imgNodes.length) {
+				return; // dont do anything as we are done with loading the images
+			}
+			var imgNode = imgNodes[self.runningCount];
+			var bgImg = new Image();
+			var getFunc = function(imgNode) {
+				return function onImageLoaded(img) {
+					console.log('loaded image', imgNode, self.runningCount);
+					imgNode.style.backgroundImage = "url('" + imgNode.getAttribute('data-src') + "')";
+					self.loadNext();
+				}
+			};
+			bgImg.onload = getFunc(imgNode);
+			bgImg.src = imgNode.getAttribute('data-src');
+			self.runningCount ++;
+		}
+		
+		var imgManager = new ImageManager(imgNodes,2);
+		
+	</script>
+</body>
+</html>

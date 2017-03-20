@@ -1,0 +1,318 @@
+<html>
+<head>
+    <meta charset="UTF-8" />
+	
+    <script src="https://unpkg.com/react@latest/dist/react.js"></script>
+    <script src="https://unpkg.com/react-dom@latest/dist/react-dom.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+	<style>
+	.container {
+		position: relative;
+	}
+	@keyframes flashanim {
+	    0%   {padding: 0px;}
+	    25%  {padding: 3px;}
+	    50%  {padding: 0px;}
+	    75%  {padding: 3px;}
+	    100% {padding: 0px;}
+	}
+	
+	.flash {
+	    animation-name: flashanim;
+	    animation-duration: .4s;
+	}
+	.score {
+	    text-align: center;
+	    width: 63px;
+	    background: lavender;
+	    padding: 10px;
+	    border-radius: 5px;
+	    border: solid 3px gray;
+		margin-bottom: 20px;
+	}
+	.cell {
+		position: absolute;
+		background-color: #ececec;
+		border-radius: 5px;
+	    width: 40px;
+	    height: 40px;
+		font-size:22px;
+	    text-align: center;
+	    vertical-align: middle;
+	    line-height: 40px;
+		padding: 0px;
+	}
+	.col0 {
+		left:0px;
+	}
+	.col1 {
+		left:50px;
+	}
+	.col2 {
+		left:100px;
+	}
+	.col3 {
+		left:150px;
+	}
+	.row0 {
+		top:0px
+	}
+	.row1 {
+		top:50px
+	}
+	.row2 {
+		top:100px
+	}
+	.row3 {
+		top:150px
+	}
+	
+	</style>
+</head>
+<body>
+	
+	<div id='todoforme'>
+	2048 tile game
+
+create the board
+accept user input in array
+update the board
+
+//use react
+//state is the 4*4 array
+//update state after every user input
+color shade
+//score
+remember pre store
+basic animation
+
+</div>
+<div id='root'>	</div>
+<script type="text/babel">
+
+	var Board = React.createClass({
+		drawBoard: function(){
+			var currentBoard = this.state.board;
+			var cells = [];
+			for(var i = 0; i<4 ; i++) {
+				for(var j= 0; j<4 ; j++) {
+					cells.push(<div className={'cell row' + i + ' col' + j}>{currentBoard[i][j] === -1? "":currentBoard[i][j]}</div>);
+				}
+			}
+			return cells;
+		},
+		getInitialState: function(){
+			return {
+				board: [
+					[-1,2,-1,2],
+					[-1,2,-1,2],
+					[-1,2,2,-1],
+					[-1,2,-1,8]
+				],
+				score: 0
+			};
+		},
+		convert2Darray: function(arr, dir){
+			switch(dir) {
+				case 'flipV': // revert the array within the columns
+					for (var col = 0; col<4; col++) {
+						for(var row = 0; row < 2; row++) {
+							var temp = arr[row][col];
+							arr[row][col] = arr[3 - row][col];
+							arr[3 - row][col] = temp;
+						}
+					}
+					break;
+				case 'transpose': // transpose
+					for(var i = 0; i<4; i++) {
+						for(var j = i; j<4; j++) {
+							var temp = arr[i][j];
+							arr[i][j] = arr[j][i];
+							arr[j][i] = temp;
+						}
+					}	
+					break;
+				case 'flipH': // revert the array within the rows
+					for(var row = 0; row < 4; row++) {
+						for (var col = 0; col<2; col++) {
+							var temp = arr[row][col];
+							arr[row][col] = arr[row][3-col];
+							arr[row][3-col] = temp;
+						}
+					}
+					break;
+			}			
+		},
+		fillRandomCell: function(arr) {
+			// get all empty cells
+			var empty = [];
+			for(var row =0; row<4 ; row++) {
+				for(var col = 0; col<4 ; col++) {
+					if(arr[row][col] === -1) {
+						empty.push({'row':row,'col':col});
+					}
+				}
+			}
+			if (empty.length <1) {
+				alert('game over, no more empty cells'); // TODO some better ui
+				return;
+			}
+			var random = Math.floor(Math.random() * (empty.length - 0)) + 0;
+			arr[empty[random].row][empty[random].col] = 2;
+		},
+		moveNumbers: function(currentBoard, direction) {
+			var bestScore = localStorage.getItem('bestScore');
+			var score = this.state.score;
+			// for up
+			for(var col = 0; col<4 ; col++) {
+				for(var row =0; row<3 ; row++) {
+					// if current = -1 shift rest until non empty
+					if(!this.findNextAndShift(currentBoard,col,row)) {
+						break;
+					}
+					
+					// if next is space you want non empty
+					if(!this.findNextAndShift(currentBoard,col,row + 1)) {
+						break;
+					}
+					
+					if (currentBoard[row][col] === currentBoard[row+1][col]) { // we want to merge only once hence we stop
+						currentBoard[row][col] = 2* currentBoard[row][col];
+						score += currentBoard[row][col]; // if 2+2 =4 we make +4 on score
+						currentBoard[row + 1][col] = -1; // the next space will be empty. but this will be taken care of in the next iteration
+					}
+				}
+			}
+			this.setState({
+				score:score
+			});
+			if (score > bestScore) {
+				localStorage.setItem('bestScore', score);
+				// do ding ding ding
+				var node = document.getElementById('bestscore');
+				node.classList.add('flash');
+				setTimeout(function(){
+					node.classList.remove('flash');
+				},1000); // after 2 sec
+			}
+		},
+		
+		findNextAndShift: function(currentBoard,col,row) {
+			// find the next non empty cell
+			for(var i = 0; i < 4 - row ; i++) {
+				if (currentBoard[row + i][col] !== -1) {
+					this.shiftUp(currentBoard, 'up', col, row, i);
+					return true;
+				}
+			}
+			return false;// break for this column
+		},
+		
+		// fixed can be col or row based on the direction
+		shiftUp: function(currentBoard, direction, col, index , by){
+			if (by === 0) {
+				return; // no sir, nothing to do here
+			}
+			for (var row = index + by; row<4 ; row++) {
+				currentBoard[row - by][col] = currentBoard[row][col];
+				currentBoard[row][col] = -1;
+			}
+		},
+		copyArr: function(arr) {
+			var newArr = [];
+			for(var row =0; row<4 ; row++) {
+				var rowArr = [];
+				for(var col = 0; col<4 ; col++) {
+					rowArr.push(arr[row][col]);
+				}
+				newArr.push(rowArr);
+			}
+			return newArr;
+		},
+		componentDidMount: function() {
+			var self = this;
+			var currentBoard;
+			function madeChanges() {
+				//check if there are any diff in the board at all 
+				var prevBoard = self.state.board;
+				var same = true;
+	 			for(var row =0; row<4 && same; row++) {
+	 				for(var col = 0; col<4 && same; col++) {
+						if (prevBoard[row][col] !== currentBoard[row][col]) {
+							same = false;
+						}
+					}
+				}
+				if(!same) {
+					self.fillRandomCell(currentBoard);
+					self.setState({
+						board: currentBoard
+					});
+				}
+			}
+			
+			// attach listeners for key up down
+			window.addEventListener('keyup', function(e){
+				currentBoard = self.copyArr(self.state.board);
+				
+				switch(e.key) {
+					case "ArrowUp":
+						self.moveNumbers(currentBoard, 'up');
+						madeChanges();
+						break;
+					case "ArrowDown":
+						self.convert2Darray(currentBoard, 'flipV');
+						self.moveNumbers(currentBoard, 'up');
+						self.convert2Darray(currentBoard, 'flipV');
+						madeChanges();
+						break;
+					case "ArrowLeft":
+						self.convert2Darray(currentBoard, 'transpose');
+						self.moveNumbers(currentBoard, 'up');
+						self.convert2Darray(currentBoard, 'transpose');
+						madeChanges();
+						break;
+					case "ArrowRight":
+						self.convert2Darray(currentBoard, 'flipH');
+						self.convert2Darray(currentBoard, 'transpose');
+						self.moveNumbers(currentBoard, 'up');
+						self.convert2Darray(currentBoard, 'transpose');
+						self.convert2Darray(currentBoard, 'flipH');
+						madeChanges();
+						break;				
+				}
+			});
+		},
+		scoreBoard: function() {
+			var bestScore = localStorage.getItem('bestScore');
+						
+			return <div>
+					<div>Score: {this.state.score}</div>
+					<div id='bestscore'>Best Score: {bestScore}</div>
+				</div>
+			
+		},
+		render: function(){
+			var cells = this.drawBoard();
+			var score = this.scoreBoard();
+			return (
+				<div>
+					<h1>2048 tile game</h1>
+					<div className='score'>
+						{score}
+					</div>
+					<div className='container'>
+						{cells}
+					</div>
+				</div>
+			);
+		}
+	});
+
+	ReactDOM.render(
+	  <Board/>,
+	  document.getElementById('root')
+	);
+
+</script>
+</body>
