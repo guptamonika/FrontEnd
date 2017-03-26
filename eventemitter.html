@@ -1,0 +1,66 @@
+<html>
+<body>
+	<script>
+/*Write an emitter class:
+
+emitter = new Emitter();
+
+// 1. Support subscribing to events.
+sub = emitter.subscribe('event_name', callback);
+sub2 = emitter.subscribe('event_name', callback2);
+
+// 2. Support emitting events.
+// This particular example should lead to the `callback` above being invoked with `foo` and `bar` as parameters.
+emitter.emit('event_name', foo, bar);
+
+// 3. Support unsubscribing existing subscriptions by releasing them.
+sub.release(); // `sub` is the reference returned by `subscribe` above
+*/
+	function Sub(name, cbNo, parent) {
+		this.name = name;
+		this.cbNo = cbNo;
+		this.parent = parent;
+	}
+	
+	Sub.prototype.release = function() {
+		if (this.parent.events[this.name] && this.parent.events[this.name][this.cbNo]) {
+			this.parent.events[this.name][this.cbNo] = null;
+		}
+	}
+	
+	function Emitter() {
+		this.events = {};
+	}
+	
+	Emitter.prototype.subscribe = function(name, callback) {
+		if (this.events[name]) { // todo be more defensive
+			this.events[name].push(callback)
+		} else {
+			this.events[name] = [callback];
+		}
+		return new Sub(name, this.events[name].length -1, this);
+	}
+	
+	Emitter.prototype.emit = function(name, ...payload) {
+		(this.events[name] || []).forEach(callback => callback && callback(payload));
+	}
+	
+	var emitter = new Emitter();
+	var sub1 = emitter.subscribe('name1', function(){
+		console.log('sub1 cb called');
+	});
+	
+	var sub3 = emitter.subscribe('name1', function(){
+		console.log('sub3 cb called');
+	});
+	
+	var sub2 = emitter.subscribe('name2', function(){
+		console.log('sub2 cb called');
+	});
+	
+	emitter.emit('name1');
+	
+	
+</script>
+</body>
+</html>

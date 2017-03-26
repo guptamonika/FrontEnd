@@ -1,0 +1,16 @@
+<html>
+<body>
+	<input id='input1'/>
+	<script type='text/javascript'>
+		var node = document.getElementById('input1');
+		var lasttime;
+		node.addEventListener('keyup', function(e){
+			if (lasttime < Date.now() - 400) {
+				console.log('400 ms passed', lasttime, Date.now());
+			} 
+			lasttime = Date.now();
+		});
+		
+	</script>
+</body>
+</html>

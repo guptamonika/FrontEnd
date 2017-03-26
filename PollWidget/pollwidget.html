@@ -1,0 +1,94 @@
+<html>
+<head>
+	<style>
+	.option {
+		list-style: none;
+	    background-color: aquamarine;
+	    margin: 4px;
+	    padding: 2px;
+	    border-radius: 2px;
+	    color: darkolivegreen;
+	}
+	.options {
+		padding: 10px;
+	}
+	#poll {
+	    background-color: #efefef;
+	    padding: 10px;
+	    margin: 10px;
+	}
+	</style>
+</head>
+<body>
+	<div id='poll'>
+		<div class='question'>
+		</div>
+		<ul class='options'>
+		</ul>
+	</div>
+	<script>
+	/*
+		Poll widget
+		Ask a question, 4 option
+		view results
+		local storage
+		auto change
+	*/
+	
+	function Poll(q, options) {
+		this.q = q;
+		this.options = options.map(option => {
+			return {count:0, value:option}
+		});
+		this.totalVotes = 0;
+	}
+	
+	Poll.prototype.show = function(node) {
+		var qNode = node.getElementsByClassName('question')[0];
+		var self = this;
+		if (qNode) {
+			qNode.textContent = this.q;
+		}
+		
+		var optionsNode = node.getElementsByClassName('options')[0];
+		this.options.forEach((option,i) => {
+			var li = document.createElement('li');
+			li.classList.add('option');
+			li.textContent = option.value;
+			li.setAttribute('id', 'option' + i);
+			self.updateVoteWidth(li, option);
+			optionsNode.insertBefore(li, null);
+			li.addEventListener('click', function(e) {
+				var node = e.currentTarget;
+				self.vote(node);
+			});
+		})
+	};
+	
+	Poll.prototype.vote = function(node) {
+		var no = node.getAttribute('id').replace('option', '');
+		// update count
+		this.options[no].count++;
+		// update in the DOM
+		this.totalVotes++;
+		this.updateAllWidth();
+	};
+	
+	Poll.prototype.updateVoteWidth = function(node, option) {
+		node.style.width = this.totalVotes? (((option.count) * 100)/this.totalVotes) + '%' : '0';
+	},
+	
+	Poll.prototype.updateAllWidth = function() {
+		var self = this;
+		this.options.forEach((option,i) => {
+			var node = document.getElementById('option' + i);
+			self.updateVoteWidth(node, option);
+		});
+	}
+	
+	var poll = new Poll('Do I work as you expect?', ['yes', 'no', 'soso']);
+	
+	poll.show(document.getElementById('poll'));
+	</script>
+</body>
+</html>

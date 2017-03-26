@@ -1,0 +1,100 @@
+<html>
+	<style>
+	.event {
+	    position: absolute;
+	    border: 1px solid;
+	    background-color: aliceblue;
+	}
+	</style>
+<body>
+	<div id='container'>
+	</div>
+	<script>
+	var events  = [ {start: 30, end: 150}, {start: 540, end: 600}, {start: 560, end: 620}, {start: 610, end: 670} ];
+	
+	var mainContainer = document.getElementById('container');
+	
+	var events2  = [ {start: 1, end: 5}, {start: 1, end: 3}, {start: 1, end: 4}, {start: 2, end: 3} , {start: 2, end: 5} , {start: 3, end: 4} , {start: 3, end: 5} , {start: 6, end: 7} , {start: 6, end: 8} , {start: 7, end: 9} , {start: 7, end: 8} , {start: 9, end: 10} ];
+	
+	function layOutDay(events) {
+		var calender = new Calender(events);
+	}
+	
+	function Calender(events) {
+		this.events = events;
+		this.adjustedEvents = [];
+		var length = events.length;
+		// sort by start and then end both
+		var finalSlots = {};
+
+		for (var i=0;i<length;i++) {
+			// find spot for i
+			this.adjustForNext(events[i]);
+			
+		}
+		//printSlots(finalSlots);
+	};
+	
+	
+	
+	Calender.prototype.adjustForNext = function adjustForNext(event) {
+		var adjustedEvents = this.adjustedEvents;
+		var length = adjustedEvents.length;
+		var overllaps = {};
+		var overlapcount = 0;
+		// find overlaps
+		// find event with end time after event start time until event with start time before endtime. can use some form of binary search to optimize
+		for (var i=0;i<length && adjustedEvents[i].start <  event.end ;i++) {  // assuming sorted order
+			if (!adjustedEvents[i].slot) {
+				adjustedEvents[i].slot = 1;
+			}
+			if (adjustedEvents[i].end >=  event.start) {
+				if (!overllaps[adjustedEvents[i].slot]) {
+					overllaps[adjustedEvents[i].slot] = [];
+				}
+				overlapcount ++;
+				overllaps[adjustedEvents[i].slot].push(adjustedEvents[i]);
+			}
+		}
+		
+		if (overlapcount < 1) {
+			event.slot = 1;
+			adjustedEvents.push(event);
+		} else {
+			
+		}
+		console.log(overllaps, adjustedEvents);		
+	}
+	
+	
+	function printSlots(finalSlots) {
+		for (var i in finalSlots) {
+			if(finalSlots.hasOwnProperty(i)) {
+				var slot = finalSlots[i];
+				var width = 600/ slot.length;
+				slot.forEach((event, index)=>{
+					printEvent(event, i, index,  width);				
+				});
+			}
+		}
+	}
+	
+	function printEvent(event, slotIndex, eventIndex, width) {
+		var node = document.createElement('div');
+		node.classList.add('event');
+		node.style.width = width + 'px';
+		node.style.top = event.start + 'px';
+		node.style.height = (event.end - event.start ) + 'px';
+		node.style.left = (10 + (eventIndex * width)) + 'px';
+		node.textContent = 'i, start, end ' + event.start + '-' + event.end;
+		mainContainer.insertBefore(node, null);
+	}
+		
+	layOutDay(events);
+	
+	//layOutDay(events2);
+	
+		
+	</script>
+</body>
+</html>
