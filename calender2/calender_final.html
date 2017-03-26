@@ -1,0 +1,142 @@
+<html>
+	<style>
+	#container {
+	    width: 620px;
+	    position: relative;
+	    height: 720px;
+	    background-color: #efefef;
+	}
+	.event {
+		position: absolute;
+	    border: 1px solid darkgray;
+	    border-left: 4px solid #4267b2;
+	    box-sizing: border-box;
+	    padding: 10px;
+		background-color: #ffffff;
+	}
+	</style>
+<body>
+	<div id='container'>
+	</div>
+	<script>
+	var events  = [ {start: 30, end: 150}, {start: 540, end: 600}, {start: 560, end: 620}, {start: 610, end: 670} ];
+	var factor = 100;
+	var mainContainer = document.getElementById('container');
+	
+	var events2  = [ {start: 1, end: 5}, {start: 1, end: 3}, {start: 1, end: 4}, {start: 2, end: 3} , {start: 2, end: 5} , {start: 3, end: 4} , {start: 3, end: 5} , {start: 6, end: 7} , {start: 6, end: 7}]
+	
+	/*
+	1) sort by start date
+	2) find slots where all are overlapping
+		iterate over the next one and keep track of minstart and maxend, if something falls under this it overlaps. 
+		in case the start becomes more that maxend, all subsequent will start later as it is sorted
+	3) for each slot try to fit
+		try to put in your grid so as to 1st put them in the leftmost coln possible
+	
+	*/
+	function layOutDay(events) {
+		var length = events.length;
+		// sort by start and then end both TODO, i am assuming so
+		var finalSlots = {};
+		var slot = 0;
+		var i = 0;
+		events[i].slot = 0;
+		var minstart = events[i].start;
+		var maxend = events[i].end;
+		finalSlots[slot] = [events[i]];
+		i++;
+		// add the overlap slot np to all of them
+		for(i=1;i<length;i++) {
+			if (events[i].start >= maxend) {  // all the rest will be not overlap with this as their start and end will be later
+				//next slot please
+				slot++;
+				finalSlots[slot] = [events[i]];
+				events[i].slot = slot;
+				minstart = events[i].start;
+				maxend = events[i].end;
+			} else {
+				events[i].slot = events[i-1].slot;
+				finalSlots[slot].push(events[i]);
+				//update min and max
+				minstart = Math.min(minstart, events[i].start); // redundant?
+				maxend = Math.max(maxend, events[i].end); 
+			}
+
+		}
+		console.log(events);
+		console.log(finalSlots);
+		
+		printSlots(finalSlots);
+	}
+	
+	function printSlots(finalSlots) {
+		for (var i in finalSlots) {
+			if(finalSlots.hasOwnProperty(i)) {
+				var slot = finalSlots[i];
+				printSlot(slot);
+			}
+		}
+	}
+	
+	function printSlot(slot) {	
+		// now print
+		var columns = formatSlot(slot);
+		columns && displaySlotMarkup(columns); // be defensive
+	}
+	
+	function displaySlotMarkup(columns) {
+		var length = columns.length;
+		var width = 600/length;
+		columns.forEach((column, i) => {
+			column.forEach(event=> {
+				printEvent(event, i, width);
+			});
+		});
+	}
+	
+	function formatSlot(slot) {
+		if(slot.length < 1) {
+			return null;
+		}
+		var columns = [[slot[0]]];
+		
+		for (var i=1; i<slot.length; i ++) {
+			var event = slot[i];
+			//find right pos
+			var found = false;
+			// check with the last element of col 1
+			columns.some(column =>{
+				var last = column.length - 1;
+				if (event.start >= column[last].end) {
+					// found it!!
+					column.push(event);
+					found = true;
+					return true;
+				} 
+			});
+			if (!found) {
+				columns.push([event]);
+			}
+		}
+		console.log('columns', columns);
+		return columns;
+	}
+	function printEvent(event, eventIndex, width) {
+		var node = document.createElement('div');
+		node.classList.add('event');
+		node.style.width = width + 'px' ;
+		node.style.top = event.start * factor + 'px';
+		node.style.height = (event.end - event.start ) * factor + 'px';
+		node.style.left = (10 + (eventIndex * width)) + 'px';
+		node.textContent = 'i, start, end ' + event.start + '-' + event.end;
+		mainContainer.insertBefore(node, null);
+	}
+		
+	//layOutDay(events);
+	
+	layOutDay(events2);
+	
+		
+	</script>
+</body>
+</html>
